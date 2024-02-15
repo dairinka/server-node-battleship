@@ -1,12 +1,12 @@
-import { ResponceType, ResponceTypeInterface } from '../types';
+import { ResponseType, ResponseTypeInterface } from '../types';
 const responseWrapper = (
-  data: ResponceTypeInterface,
-  responceType: ResponceType,
+  data: ResponseTypeInterface,
+  responseType: ResponseType,
 ): string =>
   JSON.stringify({
-    type: responceType,
+    type: responseType,
     data: JSON.stringify(data),
     id: 0,
   });
 
-export { responseWrapper };
+export default responseWrapper;

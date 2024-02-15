@@ -10,12 +10,12 @@ type RequestType =
   | 'add_ships'
   | 'attack'
   | 'randomAttack';
-interface Responce {
-  type: ResponceType;
+interface Response {
+  type: ResponseType;
   data: string;
   id: 0;
 }
-type ResponceType =
+type ResponseType =
   | 'reg'
   | 'update_winners'
   | 'create_game'
@@ -24,15 +24,15 @@ type ResponceType =
   | 'attack'
   | 'turn'
   | 'finish';
-type ResponceTypeInterface =
+type ResponseTypeInterface =
   | RegResponse
-  | UpdateWinnersResponce[]
-  | CreateGameResponce
-  | UpdateRoomStateResponce[]
-  | StartGameResponce
-  | AttackResponce
-  | PlayerTurnResponce
-  | FinishGameResponce;
+  | UpdateWinnersResponse[]
+  | CreateGameResponse
+  | UpdateRoomStateResponse[]
+  | StartGameResponse
+  | AttackResponse
+  | PlayerTurnResponse
+  | FinishGameResponse;
 interface RegRequest {
   name: string;
   password: string;
@@ -43,7 +43,7 @@ interface RegResponse {
   error: boolean;
   errorText: string;
 }
-interface UpdateWinnersResponce {
+interface UpdateWinnersResponse {
   name: string;
   wins: number;
 }
@@ -53,11 +53,11 @@ interface CreateRoomRequest {
 interface AddUserToRoomRequest {
   indexRoom: number;
 }
-interface CreateGameResponce {
+interface CreateGameResponse {
   idGame: number;
   idPlayer: number;
 }
-interface UpdateRoomStateResponce {
+interface UpdateRoomStateResponse {
   roomId: number;
   roomUsers: [
     {
@@ -71,7 +71,7 @@ interface AddShipsRequest {
   ships: Ship[];
   indexPlayer: number;
 }
-interface StartGameResponce {
+interface StartGameResponse {
   ships: Ship[];
   currentPlayerIndex: number;
 }
@@ -90,7 +90,7 @@ interface AttackRequest {
   y: number;
   indexPlayer: number;
 }
-interface AttackResponce {
+interface AttackResponse {
   position: {
     x: number;
     y: number;
@@ -102,32 +102,38 @@ interface RandomAttackRequest {
   gameId: number;
   indexPlayer: number;
 }
-interface PlayerTurnResponce {
+interface PlayerTurnResponse {
   currentPlayer: number;
 }
-interface FinishGameResponce {
+interface FinishGameResponse {
   winPlayer: number;
+}
+
+interface UserInfo {
+  name: string;
+  index: number;
 }
 
 export {
   Request,
-  Responce,
+  Response,
   RequestType,
-  ResponceType,
-  ResponceTypeInterface,
+  ResponseType,
+  ResponseTypeInterface,
   RegRequest,
   RegResponse,
-  UpdateWinnersResponce,
+  UpdateWinnersResponse,
   CreateRoomRequest,
   AddUserToRoomRequest,
-  CreateGameResponce,
-  UpdateRoomStateResponce,
+  CreateGameResponse,
+  UpdateRoomStateResponse,
   AddShipsRequest,
-  StartGameResponce,
+  StartGameResponse,
   Ship,
   AttackRequest,
-  AttackResponce,
+  AttackResponse,
   RandomAttackRequest,
-  PlayerTurnResponce,
-  FinishGameResponce,
+  PlayerTurnResponse,
+  FinishGameResponse,
+  UserInfo,
 };
