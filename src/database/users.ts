@@ -1,13 +1,13 @@
-import { RegRequest, RegResponse, UpdateWinnersResponce } from '../types';
+import { RegRequest, RegResponse, UpdateWinnersResponse } from '../types';
 
-interface UserDb {
+interface IUserDb {
   id: number;
   userName: string;
   password: string;
   wins: number;
 }
 class UsersDb {
-  private usersDb: UserDb[];
+  private usersDb: IUserDb[];
   constructor() {
     this.usersDb = [];
   }
@@ -44,8 +44,8 @@ class UsersDb {
     };
   }
 
-  updateWiners(): UpdateWinnersResponce[] {
-    const winers: UpdateWinnersResponce[] = this.usersDb.map((userInfo) => {
+  updateWiners(): UpdateWinnersResponse[] {
+    const winers: UpdateWinnersResponse[] = this.usersDb.map((userInfo) => {
       return { name: userInfo.userName, wins: userInfo.wins };
     });
     return winers;
