@@ -2,6 +2,7 @@ import { WebSocketServer } from 'ws';
 import {
   AddShipsRequest,
   AddUserToRoomRequest,
+  AttackRequest,
   RegRequest,
   Request,
 } from '../types';
@@ -10,6 +11,7 @@ import registration from '../controllers/registration';
 import createRoom from '../controllers/createRoom';
 import addUserToRoom from '../controllers/addUserToRoom';
 import addShip from '../controllers/addShips';
+import attack from '../controllers/attack';
 // import userDb from '../database/users';
 // import roomsDb from '../database/rooms';
 // import wsDb from '../database/wsDb';
@@ -41,6 +43,7 @@ wss.on('connection', function connection(ws) {
         addShip(ws, dataInfo as AddShipsRequest);
         break;
       case 'attack':
+        attack(ws, dataInfo as AttackRequest);
         break;
       case 'randomAttack':
         break;

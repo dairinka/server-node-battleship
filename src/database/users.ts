@@ -44,11 +44,15 @@ class UsersDb {
     };
   }
 
-  updateWiners(): UpdateWinnersResponse[] {
+  public updateWiners(): UpdateWinnersResponse[] {
     const winers: UpdateWinnersResponse[] = this.usersDb.map((userInfo) => {
       return { name: userInfo.userName, wins: userInfo.wins };
     });
     return winers;
+  }
+  public setWinner(playerId: number) {
+    const index = this.usersDb.findIndex((user) => user.id === playerId);
+    this.usersDb[index]!.wins += 1;
   }
 }
 const userDb = new UsersDb();
