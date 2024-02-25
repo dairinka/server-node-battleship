@@ -6,7 +6,8 @@
 ## Installation
 
 1. Clone/download repo
-2. `npm install`
+2. Change branch to "server"
+3. `npm install`
 
 ## Usage
 
