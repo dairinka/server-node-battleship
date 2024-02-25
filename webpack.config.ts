@@ -2,7 +2,7 @@ import path from 'path';
 import webpack from 'webpack';
 
 const config: webpack.Configuration = {
-  entry: './src/server.ts',
+  entry: './index.ts',
   mode: 'production',
   target: 'node',
   module: {
@@ -16,7 +16,7 @@ const config: webpack.Configuration = {
             allowImportingTsExtensions: false,
           },
         },
-        exclude: [/node_modules/],
+        exclude: [/node_modules/, /front/],
       },
     ],
   },

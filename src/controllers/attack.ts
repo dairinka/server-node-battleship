@@ -12,10 +12,8 @@ const attack = (
   dataInfo: AttackRequest,
 ) => {
   const attackResponse = gameDb.attack(dataInfo);
-  console.log(' attackResponse in controller', attackResponse);
   if (!attackResponse || attackResponse.length === 0) return;
   if (Array.isArray(attackResponse) && attackResponse.length === 1) {
-    console.log('attackResponse', attackResponse);
     const secondPlayer = gameDb.getSecondPlayerOfGame(
       attackResponse[0]!.currentPlayer,
     );
@@ -72,8 +70,6 @@ const attack = (
       );
       ws.send(wrapWinnerResponse);
       ws2.send(wrapWinnerResponse);
-      // ws.send(wrapUpdateWinnerResponse);
-      // ws2.send(wrapUpdateWinnerResponse);
       gameDb.deletePlayerId(dataInfo.indexPlayer);
       gameDb.deletePlayerId(secondPlayer as number);
       wsDb.changeUserId(ws, winnerId);

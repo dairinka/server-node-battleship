@@ -14,9 +14,6 @@ import addUserToRoom from '../controllers/addUserToRoom';
 import addShip from '../controllers/addShips';
 import attack from '../controllers/attack';
 import randomAttack from '../controllers/randomAttack';
-// import userDb from '../database/users';
-// import roomsDb from '../database/rooms';
-// import wsDb from '../database/wsDb';
 
 const PORT = 3000;
 export const wss = new WebSocketServer({ port: PORT });

@@ -20,7 +20,7 @@ interface IGames {
   turn?: PlayerId;
 }
 type StatusType = 'miss' | 'killed' | 'shot';
-
+//type ShipType = 'huge' | 'large' | 'medium' | 'small';
 interface Position {
   x: number;
   y: number;
@@ -58,19 +58,11 @@ class Game {
     if (isNewPlayerIdExist) {
       return this.assignPlayerId(userId);
     }
-    console.log('random', random);
     this.playerIdentificator.push({ userId, playerId: random });
-    console.log('this.playerIdentificator', this.playerIdentificator);
     return random;
   }
 
   public getUserIdByPlayerId(playerId: PlayerId): number {
-    console.log(
-      ' getUserIdByPlayerId find userId',
-      this.playerIdentificator.find((user) => user.playerId === playerId)!
-        .userId,
-    );
-    /// To do specify playerId, he wouldn't be in gameDb??
     return this.playerIdentificator.find((user) => user.playerId === playerId)!
       .userId;
   }
@@ -79,16 +71,7 @@ class Game {
     const index = this.playerIdentificator.findIndex(
       (user) => user.playerId === playerId,
     );
-    console.log('playerId to delete', playerId);
-    console.log(
-      'this.playerIdentificator before delelte',
-      this.playerIdentificator,
-    );
     this.playerIdentificator.splice(index, 1);
-    console.log(
-      'this.playerIdentificator after delete',
-      this.playerIdentificator,
-    );
   }
 
   private getNewPlayerId(userId: number): number | undefined {
@@ -123,23 +106,16 @@ class Game {
     playerInfo: UserInfo,
   ): CreateGameResponse | null {
     const existingGameData: IGames | undefined = this.gamesDb.get(gameId);
-    console.log('playerInfo', playerInfo);
     const playerId = this.getNewPlayerId(playerInfo.index);
-    console.log('playerId', playerId);
     if (playerId) {
       if (existingGameData) {
-        console.log('game was early created');
         existingGameData.player2 = playerId;
-        console.log('player1 = ', this.gamesDb.get(gameId)?.player1);
-        console.log('player2 = ', playerId);
         this.gamesDb.set(gameId, existingGameData);
       } else {
         this.gamesDb.set(gameId, {
           player1: playerId,
         });
-        console.log('game only created now, player1 = ', playerInfo.index);
       }
-      console.log('create game, see game db', this.gamesDb);
       return {
         idGame: gameId,
         idPlayer: playerId,
@@ -147,6 +123,74 @@ class Game {
     }
     return null;
   }
+  public createGameWithBot(userId: number): CreateGameResponse {
+    const playerId = this.assignPlayerId(userId);
+    const gameId = this.getNextGameId();
+    console.log('playerId', playerId);
+    this.gamesDb.set(gameId, { player1: playerId, player2: 1 });
+    console.log('create game, see game db', this.gamesDb);
+    return {
+      idGame: gameId,
+      idPlayer: playerId,
+    };
+  }
+  // public addBotShips() {
+  //   const boardSize = 10;
+  //   const shipTypes = ['huge', 'large', 'medium', 'small'] as ShipType[];
+  //   const shipSizes = [4, 3, 3, 2, 1];
+  //   const shipPlacements = [];
+
+  //   // Ця функція перевіряє, чи можна розмістити корабель на конкретній позиції
+  //   function canPlaceShip(ship, row, col, direction) {
+  //     if (direction === 'horizontal') {
+  //       if (col + ship > boardSize) return false;
+  //       for (let i = col; i < col + ship; i++) {
+  //         if (shipPlacements[row][i] !== 0) return false;
+  //       }
+  //     } else {
+  //       if (row + ship > boardSize) return false;
+  //       for (let i = row; i < row + ship; i++) {
+  //         if (shipPlacements[i][col] !== 0) return false;
+  //       }
+  //     }
+  //     return true;
+  //   }
+
+  //   // Ця функція розміщує корабель на конкретних позиціях
+  //   function placeShip(ship, row, col, direction) {
+  //     if (!direction) {
+  //       for (let i = col; i < col + ship; i++) {
+  //         shipPlacements[row][i] = ship;
+  //       }
+  //     } else {
+  //       for (let i = row; i < row + ship; i++) {
+  //         shipPlacements[i][col] = ship;
+  //       }
+  //     }
+  //   }
+
+  //   // Ініціалізуємо поле гри
+  //   for (let i = 0; i < boardSize; i++) {
+  //     shipPlacements.push(new Array(boardSize).fill(0));
+  //   }
+
+  //   // Розміщуємо кораблі
+  //   for (const shipSize of shipSizes) {
+  //     let placed = false;
+  //     while (!placed) {
+  //       const row = Math.floor(Math.random() * boardSize);
+  //       const col = Math.floor(Math.random() * boardSize);
+  //       const direction = Math.random() < 0.5 ? false : true;
+
+  //       if (canPlaceShip(shipSize, row, col, direction)) {
+  //         placeShip(shipSize, row, col, direction);
+  //         placed = true;
+  //       }
+  //     }
+  //   }
+
+  //   return shipPlacements;
+  // }
 
   public addShips(dataInfo: AddShipsRequest) {
     this.playersShipsDb.set(dataInfo.indexPlayer, dataInfo.ships);
@@ -158,7 +202,6 @@ class Game {
    *  @return players2 - id second players
    */
   public getSecondPlayerOfGame(playerId: PlayerId): PlayerId | false {
-    console.log('getSecondPlayer from gameDB', this.gamesDb);
     for (const [, gameData] of this.gamesDb.entries()) {
       if (gameData.player1 === playerId && gameData.player2) {
         return gameData.player2;
@@ -169,11 +212,8 @@ class Game {
     }
     return false;
   }
+
   public hasSecondPlayerShips(playerId: PlayerId): boolean {
-    // console.log(
-    //   'this.playersShipsDb.has(playerId)',
-    //   this.playersShipsDb.has(playerId),
-    // );
     return this.playersShipsDb.has(playerId);
   }
 
@@ -191,6 +231,7 @@ class Game {
       currentPlayerIndex: playerId,
     };
   }
+
   public setTurn(playerId: PlayerId, hasHeTurn: boolean) {
     for (const [gameId, gameData] of this.gamesDb.entries()) {
       if (gameData.player1 === playerId && !hasHeTurn) {
@@ -213,6 +254,7 @@ class Game {
       }
     }
   }
+
   /**
    * function turn
    * @param gameId
@@ -246,60 +288,23 @@ class Game {
     indexPlayer,
   }: AttackRequest): AttackResponse[] | undefined {
     const playerWhoShotNow = this.turn(gameId).currentPlayer;
-    // console.log('////attack');
-    // console.log('indexPlayer', indexPlayer);
-    // console.log('playerWhoShotNow', playerWhoShotNow);
+
     if (indexPlayer !== playerWhoShotNow) return;
     const isShotWas = this.isShotAlreadyHasDone(indexPlayer, x, y);
-    console.log('isShot already exist', isShotWas);
     if (isShotWas) return;
     const enemy = this.getEnemyOfGameByPlayerId(gameId, indexPlayer);
-    console.log('==> enemy', enemy);
-    //const { position, status } = this.checkShipStatus(enemy, x, y);
+
     const response = this.getAttackResponse(enemy, x, y, indexPlayer);
     if (response.length === 1 && response[0]?.status === 'miss') {
       this.setTurn(indexPlayer, false);
     }
-    console.log('//////////////////////////////////');
-    console.log('==> Attack response ready', response);
 
-    // console.log(' position', position);
-    // console.log('  status', status);
-
-    // if (status === 'miss') {
-    //   this.setTurn(indexPlayer, false);
-    //   response = {
-    //     position: { x, y },
-    //     currentPlayer: indexPlayer,
-    //     status: status,
-    //   };
-    // }
-    // if (status === 'shot') {
-    //   response = {
-    //     position: { x, y },
-    //     currentPlayer: indexPlayer,
-    //     status: status,
-    //   };
-    // }
     const currentPlayersShots = this.playerShotDb.get(indexPlayer);
     if (currentPlayersShots) {
       currentPlayersShots.push({ x, y });
     }
     this.playerShotDb.set(indexPlayer, currentPlayersShots || [{ x, y }]);
-    // if (status === 'killed') {
-    //   // const responseArr = this.atackResponseWrapper(
-    //   //   this.getSurroundedCells(enemy, position.x, position.y),
-    //   //   indexPlayer,
-    //   // );
-    //   this.playerShotDb.set(indexPlayer, currentPlayersShots || [{ x, y }]);
-    //   return responseArr.concat([
-    //     {
-    //       position: { x, y },
-    //       currentPlayer: indexPlayer,
-    //       status: status,
-    //     },
-    //   ]);
-    //}
+
     return response;
   }
 
@@ -310,11 +315,6 @@ class Game {
     length: number,
   ) {
     const cellsShipPosition = [] as Position[];
-    console.log('/////// get all ship cells');
-    console.log('startX', startX);
-    console.log('startY', startY);
-    console.log('direction', direction);
-    console.log('length', length);
     for (let i = 0; i < length; i++) {
       const x = direction ? startX : startX + i;
       const y = direction ? startY + i : startY;
@@ -329,9 +329,6 @@ class Game {
     currentY: number,
   ): boolean {
     const shots = this.playerShotDb.get(playerId);
-    console.log('shot db', this.playerShotDb);
-    console.log('current player', playerId);
-    console.log('x', currentX, 'y', currentY);
     if (!shots) return false;
     return shots.some(({ x, y }) => currentX === x && currentY === y);
   }
@@ -355,37 +352,21 @@ class Game {
 
     outerLoop: for (let i = 0; i < shipsInfo.length; i++) {
       const { position, direction, type } = shipsInfo[i] as Ship;
-      console.log('shipsInfo[i]', shipsInfo[i]);
-      console.log('shipsInfo[i].length', shipsInfo[i]?.length);
       const length = {
         huge: 4,
         large: 3,
         medium: 2,
         small: 1,
       };
-      console.log('////checkShipStatus');
-      console.log('shotX: ', shotX, 'shotY', shotY);
-      console.log('shipsInfo[i]', shipsInfo[i]);
-      console.log('position', position);
-      console.log('direction', direction);
-      console.log('length', shipsInfo[i]!.length);
 
       for (let k = 0; k < length[type]; k++) {
         const x = direction ? position.x : position.x + k;
         const y = direction ? position.y + k : position.y;
-        console.log('x', x);
-        console.log('y', y);
-        console.log('length', shipsInfo[i]!.length);
         if (shotX !== x || shotY !== y) {
-          console.log(' worked condition shotX !== x && shotY !== y');
           continue;
         }
         if (shipsInfo[i]!.length === 1) {
           statusResult = 'killed';
-          console.log('//killed');
-          console.log(' worked condition shipsInfo[i]!.length === 1');
-          console.log('position.x', position.x);
-          console.log('position.y', position.y);
           startShipPosition.x = position.x;
           startShipPosition.y = position.y;
           shipsInfo[i]!.length = 0;
@@ -401,6 +382,7 @@ class Game {
             position.x,
             position.y,
           );
+          this.pushSurroundCellsToShotDb(currentPlayer, allSurroundCells);
           const wrapShipCells = this.atackResponseWrapper(
             allShipPosition,
             currentPlayer,
@@ -417,10 +399,6 @@ class Game {
         if (shipsInfo[i]!.length > 1) {
           statusResult = 'shot';
           shipsInfo[i]!.length -= 1;
-          console.log(' worked condition - shot, ship.length - 1');
-          console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
-
-          //this.setTurn(currenPlayerId, false);
           result = [
             {
               position: { x, y },
@@ -435,12 +413,16 @@ class Game {
     }
     this.playersShipsDb.set(enemy, shipsInfo);
     return result;
+  }
 
-    // return {
-    //   position: { x: shotX, y: shotY },
-    //   currentPlayer,
-    //   status: statusResult,
-    // };
+  private pushSurroundCellsToShotDb(playerId: PlayerId, positions: Position[]) {
+    const shots = this.playerShotDb.get(playerId);
+    if (shots) {
+      const extendShots = shots.concat(positions);
+      this.playerShotDb.set(playerId, extendShots);
+    } else {
+      this.playerShotDb.set(playerId, positions);
+    }
   }
 
   /**
@@ -462,6 +444,7 @@ class Game {
       };
     });
   }
+
   /**
    * Return all cells around ship as an array
    * @param enemy
@@ -659,16 +642,19 @@ class Game {
 
     return response;
   }
+
   public isGameOver(enemy: PlayerId): boolean {
     const shipsInfo = this.playersShipsDb.get(enemy) as Ship[];
     return shipsInfo.every((ship) => ship.length === 0);
   }
+
   public deleteFinishGame(idGame: GameId) {
     const { player1, player2 } = this.gamesDb.get(idGame) as IGames;
     this.playersShipsDb.delete(player1);
     this.playersShipsDb.delete(player2!);
     this.gamesDb.delete(idGame);
   }
+
   public getRandomShot(dataInfo: RandomAttackRequest): Position {
     const randomX = this.getRandomNumber();
     const randomY = this.getRandomNumber();
@@ -682,9 +668,11 @@ class Game {
       return { x: randomX, y: randomY };
     }
   }
+
   private getRandomNumber(): number {
     return Math.floor(Math.random() * 10);
   }
+
   private isShotPositionExist(
     currentX: number,
     currentY: number,
@@ -697,5 +685,6 @@ class Game {
     );
   }
 }
+
 const gameDb = new Game();
 export default gameDb;

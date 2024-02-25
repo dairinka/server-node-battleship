@@ -59,12 +59,6 @@ class RoomsDb {
     }
     this.roomsDb[indexInDb]!.roomUsers.push(userInfo);
 
-    console.log('roomInfo', roomInfo);
-    // console.log(' this.roomsDb', this.roomsDb);
-    // console.log('indexInDb', indexInDb);
-    console.log('isUserAlreadyInRoom', isUserAlreadyInRoom);
-    console.log(' this.roomsDb', JSON.stringify(this.roomsDb));
-
     return this.roomsDb[indexInDb]?.roomUsers[0] as UserInfo;
   }
 
@@ -74,13 +68,12 @@ class RoomsDb {
    * @return UpdateRoomStateResponse[]
    */
   public updateRoomState(): UpdateRoomStateResponse[] {
-    // console.log('this.roomsDb', this.roomsDb);
     const roomWithSinglePlayer = this.roomsDb.filter(
       (roomInfo) => roomInfo.roomUsers.length === 1,
     );
-    console.log('roomWithSinglePlayer', JSON.stringify(roomWithSinglePlayer));
     return roomWithSinglePlayer;
   }
+
   public clearRoom(user1: number, user2: number) {
     const index = this.roomsDb.findIndex(({ roomUsers }) =>
       roomUsers.every(({ index }) => index === user1 || index === user2),
