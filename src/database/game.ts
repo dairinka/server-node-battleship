@@ -9,6 +9,10 @@ import {
   AttackResponse,
 } from '../types';
 
+interface PlayersIdentificator {
+  userId: number;
+  playerId: number;
+}
 interface IGames {
   player1: PlayerId;
   player2?: PlayerId;
@@ -18,29 +22,30 @@ type StatusType = 'miss' | 'killed' | 'shot';
 // interface ShipInfo extends Ship {
 //   status: StatusType;
 // }
-interface ShipPosition {
+interface Position {
   x: number;
   y: number;
 }
-// interface CellInfo extends ShipPosition {
+// interface CellInfo extends Position {
 //   status: StatusType;
 // }
-interface ShipStartStatus {
-  position: ShipPosition;
-  status: StatusType;
-}
+// interface ShipStartStatus {
+//   position: Position;
+//   status: StatusType;
+// }
 type GameId = number;
 type PlayerId = number;
 class Game {
   private gamesDb: Map<GameId, IGames>;
   private playersShipsDb: Map<PlayerId, Ship[]>;
-  // private cellsDb: Map<PlayerId, CellInfo[][]>;
-  // private shipMap: Map<PlayerId, CellInfo[][]>;
+  private playerIdentificator: PlayersIdentificator[];
+  private playerShotDb: Map<PlayerId, Position[]>;
+
   constructor() {
     this.gamesDb = new Map();
     this.playersShipsDb = new Map();
-    // this.cellsDb = new Map();
-    // this.shipMap = new Map();
+    this.playerIdentificator = [];
+    this.playerShotDb = new Map();
   }
   //  interface CreateGameResponse {
   //   idGame: number;
@@ -55,20 +60,134 @@ class Game {
     return this.gamesDb.size + 10;
   }
 
-  public createGame(gameId: number, playerInfo: UserInfo): CreateGameResponse {
-    const existingGameData: IGames | undefined = this.gamesDb.get(gameId);
-    if (existingGameData) {
-      existingGameData.player2 = playerInfo.index;
-      this.gamesDb.set(gameId, existingGameData);
-    } else {
-      this.gamesDb.set(gameId, {
-        player1: playerInfo.index,
-      });
+  public assignPlayerId(userId: number): PlayerId {
+    const random = Math.round(Math.random() * 100 + 50);
+    const isNewPlayerIdExist = this.playerIdentificator.some(
+      (user) => user.playerId === random,
+    );
+    if (isNewPlayerIdExist) {
+      return this.assignPlayerId(userId);
     }
-    return {
-      idGame: gameId,
-      idPlayer: playerInfo.index,
-    };
+    console.log('random', random);
+    this.playerIdentificator.push({ userId, playerId: random });
+    console.log('this.playerIdentificator', this.playerIdentificator);
+    return random;
+  }
+  public getUserIdByPlayerId(playerId: PlayerId): number {
+    console.log(
+      ' getUserIdByPlayerId find userId',
+      this.playerIdentificator.find((user) => user.playerId === playerId)!
+        .userId,
+    );
+    /// To do specify playerId, he wouldn't be in gameDb??
+    return this.playerIdentificator.find((user) => user.playerId === playerId)!
+      .userId;
+  }
+
+  // private isPlayerIdInGame(playerIdToCheck: PlayerId): boolean {
+  //   const playerId = this.playerIdentificator.find(
+  //     (user) => user.userId === playerIdToCheck,
+  //   )!.playerId;
+  //   console.log('Now check if player Id in a game, playerId = ', playerId);
+  //   for (const game of this.gamesDb.values()) {
+  //     console.log('game.player1', game.player1);
+  //     console.log('game.player2', game.player2);
+  //     if (game.player1 === playerId || game.player2 === playerId) {
+  //       console.log('true');
+  //       return true;
+  //     }
+  //   }
+  //   console.log('false');
+  //   return false;
+  // }
+
+  // private getPlayerIdByUserId(userId: number): PlayerId {
+  //   console.log('this.playerIdentificator', this.playerIdentificator);
+  //   console.log('userId', userId);
+  //   console.log(
+  //     ' getUserIdByPlayerId find userId',
+  //     this.playerIdentificator.find((user) => user.userId === userId)!.playerId,
+  //   );
+  //   /// To do specify playerId, he wouldn't be in gameDb - Correct tonight CHECK!!!
+
+  //   return this.playerIdentificator.find(
+  //     (user) => user.userId === userId && !this.isPlayerIdInGame(userId),
+  //   )!.playerId;
+  // }
+  public deletePlayerId(playerId: PlayerId) {
+    const index = this.playerIdentificator.findIndex(
+      (user) => user.playerId === playerId,
+    );
+    console.log('playerId to delete', playerId);
+    console.log(
+      'this.playerIdentificator before delelte',
+      this.playerIdentificator,
+    );
+    this.playerIdentificator.splice(index, 1);
+    console.log(
+      'this.playerIdentificator after delete',
+      this.playerIdentificator,
+    );
+  }
+
+  private getNewPlayerId(userId: number): number | undefined {
+    // Фільтруємо playersIdentificators для заданого userId
+    const userPlayers = this.playerIdentificator.filter(
+      (player) => player.userId === userId,
+    );
+
+    // Перевіряємо кожен playerId для userId, чи він ще не використовується в gamesDb
+    for (const player of userPlayers) {
+      if (!this.isPlayerIdUsed(player.playerId)) {
+        return player.playerId;
+      }
+    }
+
+    // Якщо не вдалося знайти вільний playerId
+    return undefined;
+  }
+
+  // Функція для перевірки, чи використовується playerId в gamesDb
+  private isPlayerIdUsed(playerId: PlayerId): boolean {
+    for (const game of this.gamesDb.values()) {
+      if (
+        game.player1 === playerId ||
+        (game.player2 && game.player2 === playerId)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public createGame(
+    gameId: number,
+    playerInfo: UserInfo,
+  ): CreateGameResponse | null {
+    const existingGameData: IGames | undefined = this.gamesDb.get(gameId);
+    console.log('playerInfo', playerInfo);
+    const playerId = this.getNewPlayerId(playerInfo.index);
+    console.log('playerId', playerId);
+    if (playerId) {
+      if (existingGameData) {
+        console.log('game was early created');
+        existingGameData.player2 = playerId;
+        console.log('player1 = ', this.gamesDb.get(gameId)?.player1);
+        console.log('player2 = ', playerId);
+        this.gamesDb.set(gameId, existingGameData);
+      } else {
+        this.gamesDb.set(gameId, {
+          player1: playerId,
+        });
+        console.log('game only created now, player1 = ', playerInfo.index);
+      }
+      console.log('create game, see game db', this.gamesDb);
+      return {
+        idGame: gameId,
+        idPlayer: playerId,
+      };
+    }
+    return null;
   }
   //   interface AddShipsRequest {
   //   gameId: number;
@@ -87,11 +206,11 @@ class Game {
   // }
 
   public addShips(dataInfo: AddShipsRequest) {
-    const shipsInfo: Ship[] = dataInfo.ships.map((ship) =>
-      Object.assign(ship, { status: 'ship' as StatusType }),
-    );
+    // const shipsInfo: Ship[] = dataInfo.ships.map((ship) =>
+    //   Object.assign(ship, { status: 'ship' as StatusType }),
+    // );
 
-    this.playersShipsDb.set(dataInfo.indexPlayer, shipsInfo);
+    this.playersShipsDb.set(dataInfo.indexPlayer, dataInfo.ships);
     //this.createButtleField(dataInfo.indexPlayer, dataInfo.ships);
   }
 
@@ -101,6 +220,7 @@ class Game {
    *  @return players2 - id second players
    */
   public getSecondPlayerOfGame(playerId: PlayerId): PlayerId | false {
+    console.log('getSecondPlayer from gameDB', this.gamesDb);
     for (const [, gameData] of this.gamesDb.entries()) {
       if (gameData.player1 === playerId && gameData.player2) {
         return gameData.player2;
@@ -112,10 +232,10 @@ class Game {
     return false;
   }
   public hasSecondPlayerShips(playerId: PlayerId): boolean {
-    console.log(
-      'this.playersShipsDb.has(playerId)',
-      this.playersShipsDb.has(playerId),
-    );
+    // console.log(
+    //   'this.playersShipsDb.has(playerId)',
+    //   this.playersShipsDb.has(playerId),
+    // );
     return this.playersShipsDb.has(playerId);
   }
 
@@ -186,62 +306,117 @@ class Game {
     x,
     y,
     indexPlayer,
-  }: AttackRequest): AttackResponse[] | AttackResponse | undefined {
+  }: AttackRequest): AttackResponse[] | undefined {
     const playerWhoShotNow = this.turn(gameId).currentPlayer;
-    console.log('////attack');
-    console.log('indexPlayer', indexPlayer);
-    console.log('playerWhoShotNow', playerWhoShotNow);
+    // console.log('////attack');
+    // console.log('indexPlayer', indexPlayer);
+    // console.log('playerWhoShotNow', playerWhoShotNow);
     if (indexPlayer !== playerWhoShotNow) return;
+    const isShotWas = this.isShotAlreadyHasDone(indexPlayer, x, y);
+    console.log('isShot already exist', isShotWas);
+    if (isShotWas) return;
     const enemy = this.getEnemyOfGameByPlayerId(gameId, indexPlayer);
-    console.log('enemy', enemy);
-    const { position, status } = this.checkShipStatus(enemy, x, y);
-    console.log(' position', position);
-    console.log('  status', status);
-    if (status === 'miss') {
+    console.log('==> enemy', enemy);
+    //const { position, status } = this.checkShipStatus(enemy, x, y);
+    const response = this.getAttackResponse(enemy, x, y, indexPlayer);
+    if (response.length === 1 && response[0]?.status === 'miss') {
       this.setTurn(indexPlayer, false);
-      return {
-        position: { x, y },
-        currentPlayer: indexPlayer,
-        status: status,
-      };
     }
-    if (status === 'shot') {
-      return {
-        position: { x, y },
-        currentPlayer: indexPlayer,
-        status: status,
-      };
+    console.log('//////////////////////////////////');
+    console.log('==> Attack response ready', response);
+
+    // console.log(' position', position);
+    // console.log('  status', status);
+
+    // if (status === 'miss') {
+    //   this.setTurn(indexPlayer, false);
+    //   response = {
+    //     position: { x, y },
+    //     currentPlayer: indexPlayer,
+    //     status: status,
+    //   };
+    // }
+    // if (status === 'shot') {
+    //   response = {
+    //     position: { x, y },
+    //     currentPlayer: indexPlayer,
+    //     status: status,
+    //   };
+    // }
+    const currentPlayersShots = this.playerShotDb.get(indexPlayer);
+    if (currentPlayersShots) {
+      currentPlayersShots.push({ x, y });
     }
-    const response = this.atackResponseWrapper(
-      this.getSurroundedCells(enemy, position.x, position.y),
-      indexPlayer,
-    );
-    return response.concat([
-      {
-        position: { x, y },
-        currentPlayer: indexPlayer,
-        status: status,
-      },
-    ]);
+    this.playerShotDb.set(indexPlayer, currentPlayersShots || [{ x, y }]);
+    // if (status === 'killed') {
+    //   // const responseArr = this.atackResponseWrapper(
+    //   //   this.getSurroundedCells(enemy, position.x, position.y),
+    //   //   indexPlayer,
+    //   // );
+    //   this.playerShotDb.set(indexPlayer, currentPlayersShots || [{ x, y }]);
+    //   return responseArr.concat([
+    //     {
+    //       position: { x, y },
+    //       currentPlayer: indexPlayer,
+    //       status: status,
+    //     },
+    //   ]);
+    //}
+    return response;
   }
-  /**
-   * Check if ship is hit, return status(miss, shot, killed). if ship was killed also return starting coordinates
-   * if not, shooting coordinates
-   * @param playerId
-   * @param shotX
-   * @param shotY
-   */
-  private checkShipStatus(
+
+  private getAllShipCells(
+    startX: number,
+    startY: number,
+    direction: boolean,
+    length: number,
+  ) {
+    const cellsShipPosition = [] as Position[];
+    console.log('/////// get all ship cells');
+    console.log('startX', startX);
+    console.log('startY', startY);
+    console.log('direction', direction);
+    console.log('length', length);
+    for (let i = 0; i < length; i++) {
+      const x = direction ? startX : startX + i;
+      const y = direction ? startY + i : startY;
+      cellsShipPosition.push({ x, y });
+    }
+    return cellsShipPosition;
+  }
+  private isShotAlreadyHasDone(
     playerId: PlayerId,
+    currentX: number,
+    currentY: number,
+  ): boolean {
+    const shots = this.playerShotDb.get(playerId);
+    console.log('shot db', this.playerShotDb);
+    console.log('current player', playerId);
+    console.log('x', currentX, 'y', currentY);
+    if (!shots) return false;
+    return shots.some(({ x, y }) => currentX === x && currentY === y);
+  }
+  private getAttackResponse(
+    enemy: PlayerId,
     shotX: number,
     shotY: number,
-  ): ShipStartStatus {
-    const shipsInfo = this.playersShipsDb.get(playerId) as Ship[];
+    currentPlayer: number,
+  ): AttackResponse[] {
+    const shipsInfo = this.playersShipsDb.get(enemy) as Ship[];
     let statusResult: StatusType = 'miss';
-    const startShipPosition: ShipPosition = { x: shotX, y: shotY };
+    const startShipPosition: Position = { x: shotX, y: shotY };
+    let result = [
+      {
+        position: { x: shotX, y: shotY },
+        currentPlayer,
+        status: 'miss',
+      },
+    ] as AttackResponse[];
 
-    for (let i = 0; i < shipsInfo.length; i++) {
+    outerLoop: for (let i = 0; i < shipsInfo.length; i++) {
       const { position, direction, type } = shipsInfo[i] as Ship;
+      console.log('shipsInfo[i]', shipsInfo[i]);
+      console.log('shipsInfo[i].length', shipsInfo[i]?.length);
       const length = {
         huge: 4,
         large: 3,
@@ -254,88 +429,191 @@ class Game {
       console.log('position', position);
       console.log('direction', direction);
       console.log('length', shipsInfo[i]!.length);
-      if (!direction) {
-        for (let k = 0; k < length[type]; k++) {
-          const x = position.x + k;
-          const y = position.y;
-          console.log('x', x);
-          console.log('y', y);
-          console.log('length', shipsInfo[i]!.length);
-          if (shotX !== x || shotY !== y) {
-            console.log(' worked condition shotX !== x && shotY !== y');
-            continue;
-          }
-          if (shipsInfo[i]!.length === 1) {
-            statusResult = 'killed';
-            console.log('//killed');
-            console.log(' worked condition shipsInfo[i]!.length === 1');
-            console.log('position.x', position.x);
-            console.log('position.y', position.y);
-            startShipPosition.x = position.x;
-            startShipPosition.y = position.y;
-            shipsInfo[i]!.length -= 1;
-            this.playersShipsDb.set(playerId, shipsInfo);
-            return {
-              position: startShipPosition,
-              status: statusResult,
-            };
-          } else {
-            statusResult = 'shot';
-            console.log(' worked condition - shot, ship.length - 1');
-            shipsInfo[i]!.length -= 1;
-            console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
-            this.playersShipsDb.set(playerId, shipsInfo);
-            return {
-              position: startShipPosition,
-              status: statusResult,
-            };
-          }
+
+      for (let k = 0; k < length[type]; k++) {
+        const x = direction ? position.x : position.x + k;
+        const y = direction ? position.y + k : position.y;
+        console.log('x', x);
+        console.log('y', y);
+        console.log('length', shipsInfo[i]!.length);
+        if (shotX !== x || shotY !== y) {
+          console.log(' worked condition shotX !== x && shotY !== y');
+          continue;
         }
-      } else {
-        for (let k = 0; k < length[type]; k++) {
-          const x = position.x;
-          const y = position.y + k;
-          console.log('x', x);
-          console.log('y', y);
-          if (shotX !== x || shotY !== y) {
-            console.log(' worked condition shotX !== x && shotY !== y');
-            continue;
-          }
-          if (shipsInfo[i]!.length === 1) {
-            statusResult = 'killed';
-            console.log('//killed');
-            console.log(' worked condition shipsInfo[i]!.length === 1');
-            console.log('position.x', position.x);
-            console.log('position.y', position.y);
-            startShipPosition.x = position.x;
-            startShipPosition.y = position.y;
-            shipsInfo[i]!.length -= 1;
-            this.playersShipsDb.set(playerId, shipsInfo);
-            return {
-              position: startShipPosition,
+        if (shipsInfo[i]!.length === 1) {
+          statusResult = 'killed';
+          console.log('//killed');
+          console.log(' worked condition shipsInfo[i]!.length === 1');
+          console.log('position.x', position.x);
+          console.log('position.y', position.y);
+          startShipPosition.x = position.x;
+          startShipPosition.y = position.y;
+          shipsInfo[i]!.length = 0;
+
+          const allShipPosition = this.getAllShipCells(
+            startShipPosition.x,
+            startShipPosition.y,
+            direction,
+            length[type],
+          );
+          const allSurroundCells = this.getSurroundedCells(
+            enemy,
+            position.x,
+            position.y,
+          );
+          const wrapShipCells = this.atackResponseWrapper(
+            allShipPosition,
+            currentPlayer,
+            'killed',
+          );
+          const wrapSurroundCells = this.atackResponseWrapper(
+            allSurroundCells,
+            currentPlayer,
+            'miss',
+          );
+          result = wrapShipCells.concat(wrapSurroundCells);
+          break outerLoop;
+        }
+        if (shipsInfo[i]!.length > 1) {
+          statusResult = 'shot';
+          shipsInfo[i]!.length -= 1;
+          console.log(' worked condition - shot, ship.length - 1');
+          console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
+
+          //this.setTurn(currenPlayerId, false);
+          result = [
+            {
+              position: { x, y },
+              currentPlayer,
               status: statusResult,
-            };
-          } else {
-            statusResult = 'shot';
-            shipsInfo[i]!.length -= 1;
-            console.log(' worked condition - shot, ship.length - 1');
-            console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
-            this.playersShipsDb.set(playerId, shipsInfo);
-            return {
-              position: startShipPosition,
-              status: statusResult,
-            };
-          }
+            },
+          ];
+
+          break outerLoop;
         }
       }
     }
+    this.playersShipsDb.set(enemy, shipsInfo);
+    return result;
 
-    this.playersShipsDb.set(playerId, shipsInfo);
-    return {
-      position: startShipPosition,
-      status: statusResult,
-    };
+    // return {
+    //   position: { x: shotX, y: shotY },
+    //   currentPlayer,
+    //   status: statusResult,
+    // };
   }
+  /**
+   * Check if ship is hit, return status(miss, shot, killed). if ship was killed also return starting coordinates
+   * if not, shooting coordinates
+   * @param playerId
+   * @param shotX
+   * @param shotY
+   */
+  // private checkShipStatus(
+  //   playerId: PlayerId,
+  //   shotX: number,
+  //   shotY: number,
+  // ): ShipStartStatus {
+  //   const shipsInfo = this.playersShipsDb.get(playerId) as Ship[];
+  //   let statusResult: StatusType = 'miss';
+  //   const startShipPosition: Position = { x: shotX, y: shotY };
+
+  //   for (let i = 0; i < shipsInfo.length; i++) {
+  //     const { position, direction, type } = shipsInfo[i] as Ship;
+  //     const length = {
+  //       huge: 4,
+  //       large: 3,
+  //       medium: 2,
+  //       small: 1,
+  //     };
+  //     console.log('////checkShipStatus');
+  //     console.log('shotX: ', shotX, 'shotY', shotY);
+  //     console.log('shipsInfo[i]', shipsInfo[i]);
+  //     console.log('position', position);
+  //     console.log('direction', direction);
+  //     console.log('length', shipsInfo[i]!.length);
+  //     if (!direction) {
+  //       for (let k = 0; k < length[type]; k++) {
+  //         const x = position.x + k;
+  //         const y = position.y;
+  //         console.log('x', x);
+  //         console.log('y', y);
+  //         console.log('length', shipsInfo[i]!.length);
+  //         if (shotX !== x || shotY !== y) {
+  //           console.log(' worked condition shotX !== x && shotY !== y');
+  //           continue;
+  //         }
+  //         if (shipsInfo[i]!.length === 1) {
+  //           statusResult = 'killed';
+  //           console.log('//killed');
+  //           console.log(' worked condition shipsInfo[i]!.length === 1');
+  //           console.log('position.x', position.x);
+  //           console.log('position.y', position.y);
+  //           startShipPosition.x = position.x;
+  //           startShipPosition.y = position.y;
+  //           shipsInfo[i]!.length -= 1;
+  //           this.playersShipsDb.set(playerId, shipsInfo);
+  //           return {
+  //             position: startShipPosition,
+  //             status: statusResult,
+  //           };
+  //         } else {
+  //           statusResult = 'shot';
+  //           console.log(' worked condition - shot, ship.length - 1');
+  //           shipsInfo[i]!.length -= 1;
+  //           console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
+  //           this.playersShipsDb.set(playerId, shipsInfo);
+  //           return {
+  //             position: startShipPosition,
+  //             status: statusResult,
+  //           };
+  //         }
+  //       }
+  //     } else {
+  //       for (let k = 0; k < length[type]; k++) {
+  //         const x = position.x;
+  //         const y = position.y + k;
+  //         console.log('x', x);
+  //         console.log('y', y);
+  //         if (shotX !== x || shotY !== y) {
+  //           console.log(' worked condition shotX !== x && shotY !== y');
+  //           continue;
+  //         }
+  //         if (shipsInfo[i]!.length === 1) {
+  //           statusResult = 'killed';
+  //           console.log('//killed');
+  //           console.log(' worked condition shipsInfo[i]!.length === 1');
+  //           console.log('position.x', position.x);
+  //           console.log('position.y', position.y);
+  //           startShipPosition.x = position.x;
+  //           startShipPosition.y = position.y;
+  //           shipsInfo[i]!.length -= 1;
+  //           this.playersShipsDb.set(playerId, shipsInfo);
+  //           return {
+  //             position: startShipPosition,
+  //             status: statusResult,
+  //           };
+  //         } else {
+  //           statusResult = 'shot';
+  //           shipsInfo[i]!.length -= 1;
+  //           console.log(' worked condition - shot, ship.length - 1');
+  //           console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
+  //           this.playersShipsDb.set(playerId, shipsInfo);
+  //           return {
+  //             position: startShipPosition,
+  //             status: statusResult,
+  //           };
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   this.playersShipsDb.set(playerId, shipsInfo);
+  //   return {
+  //     position: startShipPosition,
+  //     status: statusResult,
+  //   };
+  // }
   /**
    * Wrap array data of all cells around ship in server attack response
    * @param shipsPositon
@@ -343,14 +621,15 @@ class Game {
    *
    */
   private atackResponseWrapper(
-    shipsPositon: ShipPosition[],
+    shipsPositon: Position[],
     currentPlayer: PlayerId,
+    status: StatusType,
   ): AttackResponse[] {
     return shipsPositon.map((position) => {
       return {
         position: { x: position.x, y: position.y },
         currentPlayer,
-        status: 'miss',
+        status: status,
       };
     });
   }
@@ -365,11 +644,11 @@ class Game {
     enemy: PlayerId,
     shipStartX: number,
     shipStartY: number,
-  ): ShipPosition[] {
+  ): Position[] {
     const shipsinfo = this.playersShipsDb.get(enemy) as Ship[];
-    console.log('////getSurroundedCells');
-    console.log('shipStartX', shipStartX);
-    console.log('shipStartY', shipStartY);
+    // console.log('////getSurroundedCells');
+    // console.log('shipStartX', shipStartX);
+    // console.log('shipStartY', shipStartY);
 
     //get killed ship
 
@@ -526,7 +805,7 @@ class Game {
         } else if (x === 0 && counter === length[type] - 1) {
           response.push({ x, y: y + 1 });
           response.push({ x: x + 1, y });
-          response.push({ x: x + 1, y: y - 1 });
+          response.push({ x: x + 1, y: y + 1 });
         } else if (x === 9 && counter === length[type] - 1) {
           response.push({ x: x - 1, y });
           response.push({ x: x - 1, y: y + 1 });
@@ -559,6 +838,12 @@ class Game {
   public isGameOver(enemy: PlayerId): boolean {
     const shipsInfo = this.playersShipsDb.get(enemy) as Ship[];
     return shipsInfo.every((ship) => ship.length === 0);
+  }
+  public deleteFinishGame(idGame: GameId) {
+    const { player1, player2 } = this.gamesDb.get(idGame) as IGames;
+    this.playersShipsDb.delete(player1);
+    this.playersShipsDb.delete(player2!);
+    this.gamesDb.delete(idGame);
   }
 }
 const gameDb = new Game();
