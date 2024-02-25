@@ -7,6 +7,7 @@ import {
   PlayerTurnResponse,
   AttackRequest,
   AttackResponse,
+  RandomAttackRequest,
 } from '../types';
 
 interface PlayersIdentificator {
@@ -19,20 +20,12 @@ interface IGames {
   turn?: PlayerId;
 }
 type StatusType = 'miss' | 'killed' | 'shot';
-// interface ShipInfo extends Ship {
-//   status: StatusType;
-// }
+
 interface Position {
   x: number;
   y: number;
 }
-// interface CellInfo extends Position {
-//   status: StatusType;
-// }
-// interface ShipStartStatus {
-//   position: Position;
-//   status: StatusType;
-// }
+
 type GameId = number;
 type PlayerId = number;
 class Game {
@@ -47,10 +40,7 @@ class Game {
     this.playerIdentificator = [];
     this.playerShotDb = new Map();
   }
-  //  interface CreateGameResponse {
-  //   idGame: number;
-  //   idPlayer: number;
-  // }
+
   /**
    * function CreateGame
    * send for both players in the room
@@ -73,6 +63,7 @@ class Game {
     console.log('this.playerIdentificator', this.playerIdentificator);
     return random;
   }
+
   public getUserIdByPlayerId(playerId: PlayerId): number {
     console.log(
       ' getUserIdByPlayerId find userId',
@@ -84,36 +75,6 @@ class Game {
       .userId;
   }
 
-  // private isPlayerIdInGame(playerIdToCheck: PlayerId): boolean {
-  //   const playerId = this.playerIdentificator.find(
-  //     (user) => user.userId === playerIdToCheck,
-  //   )!.playerId;
-  //   console.log('Now check if player Id in a game, playerId = ', playerId);
-  //   for (const game of this.gamesDb.values()) {
-  //     console.log('game.player1', game.player1);
-  //     console.log('game.player2', game.player2);
-  //     if (game.player1 === playerId || game.player2 === playerId) {
-  //       console.log('true');
-  //       return true;
-  //     }
-  //   }
-  //   console.log('false');
-  //   return false;
-  // }
-
-  // private getPlayerIdByUserId(userId: number): PlayerId {
-  //   console.log('this.playerIdentificator', this.playerIdentificator);
-  //   console.log('userId', userId);
-  //   console.log(
-  //     ' getUserIdByPlayerId find userId',
-  //     this.playerIdentificator.find((user) => user.userId === userId)!.playerId,
-  //   );
-  //   /// To do specify playerId, he wouldn't be in gameDb - Correct tonight CHECK!!!
-
-  //   return this.playerIdentificator.find(
-  //     (user) => user.userId === userId && !this.isPlayerIdInGame(userId),
-  //   )!.playerId;
-  // }
   public deletePlayerId(playerId: PlayerId) {
     const index = this.playerIdentificator.findIndex(
       (user) => user.playerId === playerId,
@@ -131,19 +92,16 @@ class Game {
   }
 
   private getNewPlayerId(userId: number): number | undefined {
-    // Фільтруємо playersIdentificators для заданого userId
     const userPlayers = this.playerIdentificator.filter(
       (player) => player.userId === userId,
     );
 
-    // Перевіряємо кожен playerId для userId, чи він ще не використовується в gamesDb
     for (const player of userPlayers) {
       if (!this.isPlayerIdUsed(player.playerId)) {
         return player.playerId;
       }
     }
 
-    // Якщо не вдалося знайти вільний playerId
     return undefined;
   }
 
@@ -189,29 +147,9 @@ class Game {
     }
     return null;
   }
-  //   interface AddShipsRequest {
-  //   gameId: number;
-  //   ships: Ship[];
-  //   indexPlayer: number;
-  // }
-
-  //   interface Ship {
-  //   position: {
-  //     x: number;
-  //     y: number;
-  //   };
-  //   direction: boolean;
-  //   length: number;
-  //   type: 'small' | 'medium' | 'large' | 'huge';
-  // }
 
   public addShips(dataInfo: AddShipsRequest) {
-    // const shipsInfo: Ship[] = dataInfo.ships.map((ship) =>
-    //   Object.assign(ship, { status: 'ship' as StatusType }),
-    // );
-
     this.playersShipsDb.set(dataInfo.indexPlayer, dataInfo.ships);
-    //this.createButtleField(dataInfo.indexPlayer, dataInfo.ships);
   }
 
   /** function getSecondPlayerOfRoom
@@ -384,6 +322,7 @@ class Game {
     }
     return cellsShipPosition;
   }
+
   private isShotAlreadyHasDone(
     playerId: PlayerId,
     currentX: number,
@@ -396,6 +335,7 @@ class Game {
     if (!shots) return false;
     return shots.some(({ x, y }) => currentX === x && currentY === y);
   }
+
   private getAttackResponse(
     enemy: PlayerId,
     shotX: number,
@@ -502,118 +442,7 @@ class Game {
     //   status: statusResult,
     // };
   }
-  /**
-   * Check if ship is hit, return status(miss, shot, killed). if ship was killed also return starting coordinates
-   * if not, shooting coordinates
-   * @param playerId
-   * @param shotX
-   * @param shotY
-   */
-  // private checkShipStatus(
-  //   playerId: PlayerId,
-  //   shotX: number,
-  //   shotY: number,
-  // ): ShipStartStatus {
-  //   const shipsInfo = this.playersShipsDb.get(playerId) as Ship[];
-  //   let statusResult: StatusType = 'miss';
-  //   const startShipPosition: Position = { x: shotX, y: shotY };
 
-  //   for (let i = 0; i < shipsInfo.length; i++) {
-  //     const { position, direction, type } = shipsInfo[i] as Ship;
-  //     const length = {
-  //       huge: 4,
-  //       large: 3,
-  //       medium: 2,
-  //       small: 1,
-  //     };
-  //     console.log('////checkShipStatus');
-  //     console.log('shotX: ', shotX, 'shotY', shotY);
-  //     console.log('shipsInfo[i]', shipsInfo[i]);
-  //     console.log('position', position);
-  //     console.log('direction', direction);
-  //     console.log('length', shipsInfo[i]!.length);
-  //     if (!direction) {
-  //       for (let k = 0; k < length[type]; k++) {
-  //         const x = position.x + k;
-  //         const y = position.y;
-  //         console.log('x', x);
-  //         console.log('y', y);
-  //         console.log('length', shipsInfo[i]!.length);
-  //         if (shotX !== x || shotY !== y) {
-  //           console.log(' worked condition shotX !== x && shotY !== y');
-  //           continue;
-  //         }
-  //         if (shipsInfo[i]!.length === 1) {
-  //           statusResult = 'killed';
-  //           console.log('//killed');
-  //           console.log(' worked condition shipsInfo[i]!.length === 1');
-  //           console.log('position.x', position.x);
-  //           console.log('position.y', position.y);
-  //           startShipPosition.x = position.x;
-  //           startShipPosition.y = position.y;
-  //           shipsInfo[i]!.length -= 1;
-  //           this.playersShipsDb.set(playerId, shipsInfo);
-  //           return {
-  //             position: startShipPosition,
-  //             status: statusResult,
-  //           };
-  //         } else {
-  //           statusResult = 'shot';
-  //           console.log(' worked condition - shot, ship.length - 1');
-  //           shipsInfo[i]!.length -= 1;
-  //           console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
-  //           this.playersShipsDb.set(playerId, shipsInfo);
-  //           return {
-  //             position: startShipPosition,
-  //             status: statusResult,
-  //           };
-  //         }
-  //       }
-  //     } else {
-  //       for (let k = 0; k < length[type]; k++) {
-  //         const x = position.x;
-  //         const y = position.y + k;
-  //         console.log('x', x);
-  //         console.log('y', y);
-  //         if (shotX !== x || shotY !== y) {
-  //           console.log(' worked condition shotX !== x && shotY !== y');
-  //           continue;
-  //         }
-  //         if (shipsInfo[i]!.length === 1) {
-  //           statusResult = 'killed';
-  //           console.log('//killed');
-  //           console.log(' worked condition shipsInfo[i]!.length === 1');
-  //           console.log('position.x', position.x);
-  //           console.log('position.y', position.y);
-  //           startShipPosition.x = position.x;
-  //           startShipPosition.y = position.y;
-  //           shipsInfo[i]!.length -= 1;
-  //           this.playersShipsDb.set(playerId, shipsInfo);
-  //           return {
-  //             position: startShipPosition,
-  //             status: statusResult,
-  //           };
-  //         } else {
-  //           statusResult = 'shot';
-  //           shipsInfo[i]!.length -= 1;
-  //           console.log(' worked condition - shot, ship.length - 1');
-  //           console.log(' shipsInfo[i]!.length', shipsInfo[i]!.length);
-  //           this.playersShipsDb.set(playerId, shipsInfo);
-  //           return {
-  //             position: startShipPosition,
-  //             status: statusResult,
-  //           };
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   this.playersShipsDb.set(playerId, shipsInfo);
-  //   return {
-  //     position: startShipPosition,
-  //     status: statusResult,
-  //   };
-  // }
   /**
    * Wrap array data of all cells around ship in server attack response
    * @param shipsPositon
@@ -646,11 +475,6 @@ class Game {
     shipStartY: number,
   ): Position[] {
     const shipsinfo = this.playersShipsDb.get(enemy) as Ship[];
-    // console.log('////getSurroundedCells');
-    // console.log('shipStartX', shipStartX);
-    // console.log('shipStartY', shipStartY);
-
-    //get killed ship
 
     const { position, direction, type } = shipsinfo.find(
       (ship) =>
@@ -844,6 +668,33 @@ class Game {
     this.playersShipsDb.delete(player1);
     this.playersShipsDb.delete(player2!);
     this.gamesDb.delete(idGame);
+  }
+  public getRandomShot(dataInfo: RandomAttackRequest): Position {
+    const randomX = this.getRandomNumber();
+    const randomY = this.getRandomNumber();
+    const isShotExist = this.isShotPositionExist(
+      randomX,
+      randomY,
+      dataInfo.indexPlayer,
+    );
+    if (isShotExist) return this.getRandomShot(dataInfo);
+    else {
+      return { x: randomX, y: randomY };
+    }
+  }
+  private getRandomNumber(): number {
+    return Math.floor(Math.random() * 10);
+  }
+  private isShotPositionExist(
+    currentX: number,
+    currentY: number,
+    playerId: PlayerId,
+  ): boolean {
+    const shotsCurrentPlayer = this.playerShotDb.get(playerId);
+    if (!shotsCurrentPlayer) return false;
+    return shotsCurrentPlayer?.some(
+      ({ x, y }) => currentX === x && currentY === y,
+    );
   }
 }
 const gameDb = new Game();

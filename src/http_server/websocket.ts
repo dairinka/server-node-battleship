@@ -3,6 +3,7 @@ import {
   AddShipsRequest,
   AddUserToRoomRequest,
   AttackRequest,
+  RandomAttackRequest,
   RegRequest,
   Request,
 } from '../types';
@@ -12,6 +13,7 @@ import createRoom from '../controllers/createRoom';
 import addUserToRoom from '../controllers/addUserToRoom';
 import addShip from '../controllers/addShips';
 import attack from '../controllers/attack';
+import randomAttack from '../controllers/randomAttack';
 // import userDb from '../database/users';
 // import roomsDb from '../database/rooms';
 // import wsDb from '../database/wsDb';
@@ -45,6 +47,7 @@ wss.on('connection', function connection(ws) {
         attack(ws, clients, dataInfo as AttackRequest);
         break;
       case 'randomAttack':
+        randomAttack(ws, clients, dataInfo as RandomAttackRequest);
         break;
     }
   });
