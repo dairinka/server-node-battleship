@@ -6,7 +6,7 @@ import wsDb from '../database/wsDb';
 
 const createRoom = (ws: WebSocket, clients: Set<WebSocket>) => {
   const userInfo = wsDb.getUserInfoByWs(ws);
-  console.log('userInfo', userInfo);
+  console.log('userInfo from wsDb in create room', userInfo);
   roomsDb.createNewRoom(userInfo);
   const updateRoomResponse = roomsDb.updateRoomState();
   for (const client of clients) {

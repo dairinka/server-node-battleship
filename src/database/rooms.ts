@@ -23,10 +23,17 @@ class RoomsDb {
    *
    */
   public createNewRoom(userInfo: UserInfo): void {
-    this.roomsDb.push({
-      roomId: this.roomsDb.length + 1,
-      roomUsers: [userInfo],
-    });
+    const isUserAreadyInRoom = this.roomsDb.some((room) =>
+      room.roomUsers.some((user) => user.index === userInfo.index),
+    );
+    if (!isUserAreadyInRoom) {
+      this.roomsDb.push({
+        roomId: this.roomsDb.length + 1,
+        roomUsers: [userInfo],
+      });
+    } else {
+      console.error(' ==> \x1b[31mRoom has already created\x1b[0m');
+    }
   }
 
   /**
@@ -37,16 +44,27 @@ class RoomsDb {
    */
   public addUserToRoom(roomId: number, userInfo: UserInfo): UserInfo | false {
     const roomInfo = this.roomsDb.find((room) => room.roomId === roomId);
-    console.log('roomInfo', roomInfo);
     const indexInDb = this.roomsDb.indexOf(roomInfo!);
-    console.log(' this.roomsDb', this.roomsDb);
-    console.log('indexInDb', indexInDb);
     const isUserAlreadyInRoom =
       roomInfo!.roomUsers![0].index === userInfo.index;
-    console.log('isUserAlreadyInRoom', isUserAlreadyInRoom);
-    if (isUserAlreadyInRoom) return false;
+    if (isUserAlreadyInRoom) {
+      console.error(' ==> \x1b[31mYou already in a room\x1b[0m');
+      return false;
+    }
+    const indexRoomWhenCurrentUserIs = this.roomsDb.findIndex(
+      (room) => room.roomUsers[0].index === userInfo.index,
+    );
+    if (indexRoomWhenCurrentUserIs > -1) {
+      this.roomsDb.splice(indexRoomWhenCurrentUserIs, 1);
+    }
     this.roomsDb[indexInDb]!.roomUsers.push(userInfo);
-    console.log(' this.roomsDb', this.roomsDb);
+
+    console.log('roomInfo', roomInfo);
+    // console.log(' this.roomsDb', this.roomsDb);
+    // console.log('indexInDb', indexInDb);
+    console.log('isUserAlreadyInRoom', isUserAlreadyInRoom);
+    console.log(' this.roomsDb', JSON.stringify(this.roomsDb));
+
     return this.roomsDb[indexInDb]?.roomUsers[0] as UserInfo;
   }
 
@@ -56,12 +74,18 @@ class RoomsDb {
    * @return UpdateRoomStateResponse[]
    */
   public updateRoomState(): UpdateRoomStateResponse[] {
-    console.log('this.roomsDb', this.roomsDb);
+    // console.log('this.roomsDb', this.roomsDb);
     const roomWithSinglePlayer = this.roomsDb.filter(
       (roomInfo) => roomInfo.roomUsers.length === 1,
     );
-    console.log('roomWithSinglePlayer', roomWithSinglePlayer);
+    console.log('roomWithSinglePlayer', JSON.stringify(roomWithSinglePlayer));
     return roomWithSinglePlayer;
+  }
+  public clearRoom(user1: number, user2: number) {
+    const index = this.roomsDb.findIndex(({ roomUsers }) =>
+      roomUsers.every(({ index }) => index === user1 || index === user2),
+    );
+    this.roomsDb.splice(index, 1);
   }
 }
 const roomsDb = new RoomsDb();

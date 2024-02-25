@@ -19,15 +19,17 @@ const addUserToRoom = (
     for (const client of clients) {
       client.send(responseWrapper(updateRoomResponse, 'update_room'));
     }
-    ws.send(
-      responseWrapper(gameDb.createGame(gameId, userInfo), 'create_game'),
-    );
-    ws2.send(
-      responseWrapper(
-        gameDb.createGame(gameId, firstUserInRoom),
-        'create_game',
-      ),
-    );
+    const firstPlayerId = gameDb.assignPlayerId(firstUserInRoom.index);
+    const secondPlayer = gameDb.assignPlayerId(userInfo.index);
+    const createGameUser1 = gameDb.createGame(gameId, userInfo);
+    const createGameUser2 = gameDb.createGame(gameId, firstUserInRoom);
+    if (createGameUser1 && createGameUser2) {
+      ws.send(responseWrapper(createGameUser1, 'create_game'));
+      ws2.send(responseWrapper(createGameUser2, 'create_game'));
+
+      wsDb.changeUserId(ws, secondPlayer);
+      wsDb.changeUserId(ws2, firstPlayerId);
+    }
   }
 };
 

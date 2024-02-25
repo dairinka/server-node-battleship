@@ -25,7 +25,6 @@ wss.on('connection', function connection(ws) {
   ws.on('message', function message(clientData) {
     const data = JSON.parse(clientData.toString()) as Request;
 
-    // console.log('ws', ws);
     const dataInfo = data.type !== 'create_room' && JSON.parse(data.data);
     console.log('dataInfo', dataInfo);
     console.log(data.type);
@@ -43,7 +42,7 @@ wss.on('connection', function connection(ws) {
         addShip(ws, dataInfo as AddShipsRequest);
         break;
       case 'attack':
-        attack(ws, dataInfo as AttackRequest);
+        attack(ws, clients, dataInfo as AttackRequest);
         break;
       case 'randomAttack':
         break;

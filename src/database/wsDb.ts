@@ -10,20 +10,25 @@ class WsDb {
   constructor() {
     this.wsDb = new Map();
   }
-  addUserInfoByWs(ws: WebSocket, userInfo: UserInfo): void {
-    console.log('userInfo in wsDb add user', userInfo);
+  public addUserInfoByWs(ws: WebSocket, userInfo: UserInfo): void {
+    if (!this.wsDb.has(ws)) console.log('userInfo in wsDb add user', userInfo);
     this.wsDb.set(ws, userInfo);
   }
-  getUserInfoByWs(ws: WebSocket): UserInfo {
+  public getUserInfoByWs(ws: WebSocket): UserInfo {
     //console.log('userInfo in wsDb get user', this.wsDb.get(ws));
     return this.wsDb.get(ws) as UserInfo;
   }
-  getWsByUserId(userId: number): WebSocket {
+  public getWsByUserId(userId: number): WebSocket {
     const wsInfo = Array.from(this.wsDb.entries()).find(
       ([, userInfo]) => userInfo.index === userId,
     );
     //console.log('wsInfo', wsInfo);
     return wsInfo![0] as WebSocket;
+  }
+  public changeUserId(ws: WebSocket, newId: number) {
+    const userInfo = this.wsDb.get(ws);
+    userInfo!.index = newId;
+    this.wsDb.set(ws, userInfo!);
   }
 }
 
