@@ -10,6 +10,7 @@ const randomAttack = (
   dataInfo: RandomAttackRequest,
 ) => {
   const newShotPosition = gameDb.getRandomShot(dataInfo);
+  console.log('new Shot position', newShotPosition);
   const randomAttackRequest = {
     gameId: dataInfo.gameId,
     x: newShotPosition.x,

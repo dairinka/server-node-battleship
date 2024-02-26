@@ -9,7 +9,8 @@ type RequestType =
   | 'add_user_to_room'
   | 'add_ships'
   | 'attack'
-  | 'randomAttack';
+  | 'randomAttack'
+  | 'single_play';
 interface Response {
   type: ResponseType;
   data: string;

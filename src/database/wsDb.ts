@@ -28,6 +28,9 @@ class WsDb {
     userInfo!.index = newId;
     this.wsDb.set(ws, userInfo!);
   }
+  public deleteWs(ws: WebSocket): void {
+    this.wsDb.delete(ws);
+  }
 }
 
 const wsDb = new WsDb();

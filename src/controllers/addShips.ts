@@ -7,7 +7,21 @@ import wsDb from '../database/wsDb';
 const addShip = (ws: WebSocket, dataInfo: AddShipsRequest) => {
   gameDb.addShips(dataInfo);
   const secondPlayerId = gameDb.getSecondPlayerOfGame(dataInfo.indexPlayer);
-  if (secondPlayerId && gameDb.hasSecondPlayerShips(secondPlayerId)) {
+  const isSecondPlayerBot = gameDb.isSecondPlayerBot(dataInfo.indexPlayer);
+  if (isSecondPlayerBot) {
+    ws.send(
+      responseWrapper(gameDb.startGame(dataInfo.indexPlayer), 'start_game'),
+    );
+    console.log('currentUser', dataInfo.indexPlayer);
+    gameDb.setTurn(dataInfo.indexPlayer, true);
+    const turn = gameDb.turn(dataInfo.gameId);
+    ws.send(responseWrapper(turn, 'turn'));
+  }
+  if (
+    secondPlayerId &&
+    gameDb.hasSecondPlayerShips(secondPlayerId) &&
+    !isSecondPlayerBot
+  ) {
     const ws2 = wsDb.getWsByUserId(secondPlayerId);
 
     ws.send(

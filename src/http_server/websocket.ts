@@ -14,6 +14,8 @@ import addUserToRoom from '../controllers/addUserToRoom';
 import addShip from '../controllers/addShips';
 import attack from '../controllers/attack';
 import randomAttack from '../controllers/randomAttack';
+import wsDb from '../database/wsDb';
+import playWithBot from '../controllers/playWithBot';
 
 const PORT = 3000;
 export const wss = new WebSocketServer({ port: PORT });
@@ -24,7 +26,10 @@ wss.on('connection', function connection(ws) {
   ws.on('message', function message(clientData) {
     const data = JSON.parse(clientData.toString()) as Request;
 
-    const dataInfo = data.type !== 'create_room' && JSON.parse(data.data);
+    const dataInfo =
+      data.type !== 'create_room' &&
+      data.type !== 'single_play' &&
+      JSON.parse(data.data);
     console.log('dataInfo', dataInfo);
     console.log(data.type);
     switch (data.type) {
@@ -46,6 +51,15 @@ wss.on('connection', function connection(ws) {
       case 'randomAttack':
         randomAttack(ws, clients, dataInfo as RandomAttackRequest);
         break;
+      case 'single_play':
+        playWithBot(ws);
+        break;
+      default:
+        console.log("It's unknown request");
     }
+  });
+  ws.on('close', function () {
+    wsDb.deleteWs(ws);
+    clients.delete(ws);
   });
 });

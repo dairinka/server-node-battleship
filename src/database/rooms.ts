@@ -73,7 +73,10 @@ class RoomsDb {
     );
     return roomWithSinglePlayer;
   }
-
+  /**
+   * if user play with bot, all created room - delete
+   * @param userId
+   */
   public clearRoom(user1: number, user2: number) {
     const index = this.roomsDb.findIndex(({ roomUsers }) =>
       roomUsers.every(({ index }) => index === user1 || index === user2),

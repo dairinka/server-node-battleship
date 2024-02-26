@@ -18,9 +18,15 @@ interface IGames {
   player1: PlayerId;
   player2?: PlayerId;
   turn?: PlayerId;
+  bot?: boolean;
 }
 type StatusType = 'miss' | 'killed' | 'shot';
-//type ShipType = 'huge' | 'large' | 'medium' | 'small';
+type ShipType = 'huge' | 'large' | 'medium' | 'small';
+
+interface ShipCharacteristics {
+  type: ShipType;
+  length: number;
+}
 interface Position {
   x: number;
   y: number;
@@ -33,21 +39,33 @@ class Game {
   private playersShipsDb: Map<PlayerId, Ship[]>;
   private playerIdentificator: PlayersIdentificator[];
   private playerShotDb: Map<PlayerId, Position[]>;
+  private botNumber: number;
 
   constructor() {
     this.gamesDb = new Map();
     this.playersShipsDb = new Map();
     this.playerIdentificator = [];
     this.playerShotDb = new Map();
+    this.botNumber;
   }
 
-  /**
-   * function CreateGame
-   * send for both players in the room
-   *  id for player in the game session, who have sent add_user_to_room request, not enemy *\
-   */
   public getNextGameId(): number {
     return this.gamesDb.size + 10;
+  }
+  private getNextBotNumber() {
+    if (this.botNumber) return (this.botNumber += 1);
+    return (this.botNumber = 1);
+  }
+  public isSecondPlayerBot(playerId: PlayerId) {
+    for (const [, gameData] of this.gamesDb.entries()) {
+      if (gameData.player1 === playerId && gameData.player2) {
+        if (gameData.bot) return true;
+      }
+      if (gameData.player2 === playerId && gameData.player1) {
+        if (gameData.bot) return true;
+      }
+    }
+    return false;
   }
 
   public assignPlayerId(userId: number): PlayerId {
@@ -125,72 +143,199 @@ class Game {
   }
   public createGameWithBot(userId: number): CreateGameResponse {
     const playerId = this.assignPlayerId(userId);
+    const botId = this.getNextBotNumber();
     const gameId = this.getNextGameId();
     console.log('playerId', playerId);
-    this.gamesDb.set(gameId, { player1: playerId, player2: 1 });
+    this.gamesDb.set(gameId, { player1: playerId, player2: botId, bot: true });
     console.log('create game, see game db', this.gamesDb);
+    this.addBotShips(botId);
     return {
       idGame: gameId,
       idPlayer: playerId,
     };
   }
-  // public addBotShips() {
-  //   const boardSize = 10;
-  //   const shipTypes = ['huge', 'large', 'medium', 'small'] as ShipType[];
-  //   const shipSizes = [4, 3, 3, 2, 1];
-  //   const shipPlacements = [];
 
-  //   // Ця функція перевіряє, чи можна розмістити корабель на конкретній позиції
-  //   function canPlaceShip(ship, row, col, direction) {
-  //     if (direction === 'horizontal') {
-  //       if (col + ship > boardSize) return false;
-  //       for (let i = col; i < col + ship; i++) {
-  //         if (shipPlacements[row][i] !== 0) return false;
-  //       }
-  //     } else {
-  //       if (row + ship > boardSize) return false;
-  //       for (let i = row; i < row + ship; i++) {
-  //         if (shipPlacements[i][col] !== 0) return false;
-  //       }
-  //     }
-  //     return true;
-  //   }
+  public addBotShips(botId: PlayerId) {
+    const boardSize = 10;
+    const shipSizes: ShipCharacteristics[] = [
+      { type: 'huge', length: 4 },
+      { type: 'large', length: 3 },
+      { type: 'large', length: 3 },
+      { type: 'medium', length: 2 },
+      { type: 'medium', length: 2 },
+      { type: 'medium', length: 2 },
+      { type: 'small', length: 1 },
+      { type: 'small', length: 1 },
+      { type: 'small', length: 1 },
+      { type: 'small', length: 1 },
+    ];
+    const ships = [] as Ship[];
+    const shipPlacements = [] as number[][];
 
-  //   // Ця функція розміщує корабель на конкретних позиціях
-  //   function placeShip(ship, row, col, direction) {
-  //     if (!direction) {
-  //       for (let i = col; i < col + ship; i++) {
-  //         shipPlacements[row][i] = ship;
-  //       }
-  //     } else {
-  //       for (let i = row; i < row + ship; i++) {
-  //         shipPlacements[i][col] = ship;
-  //       }
-  //     }
-  //   }
+    function canPlaceShip(
+      length: number,
+      x: number,
+      y: number,
+      direction: boolean,
+    ) {
+      if (length === 1) {
+        if (shipPlacements[y]![x] !== 0) return false;
+        if (y - 1 >= 0 && shipPlacements[y - 1]![x] !== 0) return false;
+        if (y + 1 <= 9 && shipPlacements[y + 1]![x] !== 0) return false;
+        // check begining surrounded cells
+        if (x - 1 >= 0 && y - 1 >= 0 && shipPlacements[y - 1]![x - 1] !== 0)
+          return false;
+        if (x - 1 >= 0 && shipPlacements[y]![x - 1] !== 0) return false;
+        if (x - 1 >= 0 && y + 1 <= 9 && shipPlacements[y + 1]![x - 1] !== 0)
+          return false;
+        // check ending surrounded cells
+        if (x + 1 <= 9 && y - 1 >= 0 && shipPlacements[y - 1]![x + 1] !== 0)
+          return false;
+        if (x + 1 <= 9 && shipPlacements[y]![x + 1] !== 0) return false;
+        if (x + 1 <= 9 && y + 1 <= 9 && shipPlacements[y + 1]![x + 1] !== 0)
+          return false;
+      } else if (!direction) {
+        //check length
+        const xEnd = x + length - 1;
+        if (xEnd >= boardSize) return false;
+        for (let i = x; i < x + length; i++) {
+          if (y - 1 >= 0 && shipPlacements[y - 1]![i] !== 0) return false;
+          if (y + 1 <= 9 && shipPlacements[y + 1]![i] !== 0) return false;
+          if (shipPlacements[y]![i] !== 0) return false;
+        }
+        // check begining surrounded cells
+        if (x - 1 >= 0 && y - 1 >= 0 && shipPlacements[y - 1]![x - 1] !== 0)
+          return false;
+        if (x - 1 >= 0 && shipPlacements[y]![x - 1] !== 0) return false;
+        if (x - 1 >= 0 && y + 1 <= 9 && shipPlacements[y + 1]![x - 1] !== 0)
+          return false;
+        // check ending surrounded cells
+        if (
+          xEnd + 1 <= 9 &&
+          y - 1 >= 0 &&
+          shipPlacements[y - 1]![xEnd + 1] !== 0
+        )
+          return false;
+        if (xEnd + 1 <= 9 && shipPlacements[y]![xEnd + 1] !== 0) return false;
+        if (
+          xEnd + 1 <= 9 &&
+          y + 1 <= 9 &&
+          shipPlacements[y + 1]![xEnd + 1] !== 0
+        )
+          return false;
+      } else {
+        const yEnd = y + length - 1;
+        if (yEnd >= boardSize) return false;
+        for (let i = y; i < y + length; i++) {
+          if (x - 1 >= 0 && shipPlacements[i]![x - 1] !== 0) return false;
+          if (x + 1 <= 9 && shipPlacements[i]![x + 1] !== 0) return false;
+          if (shipPlacements[i]![x] !== 0) return false;
+        }
+        // check begining surrounded cells
+        if (x - 1 >= 0 && y - 1 >= 0 && shipPlacements[y - 1]![x - 1] !== 0)
+          return false;
+        if (y - 1 >= 0 && shipPlacements[y - 1]![x] !== 0) return false;
+        if (x + 1 <= 9 && y - 1 >= 0 && shipPlacements[y - 1]![x + 1] !== 0)
+          return false;
+        // check ending surrounded cells
+        if (
+          x - 1 >= 0 &&
+          yEnd + 1 <= 9 &&
+          shipPlacements[yEnd + 1]![x - 1] !== 0
+        )
+          return false;
+        if (yEnd + 1 <= 9 && shipPlacements[yEnd + 1]![x] !== 0) return false;
+        if (
+          x + 1 <= 9 &&
+          yEnd + 1 <= 9 &&
+          shipPlacements[yEnd + 1]![x + 1] !== 0
+        )
+          return false;
+      }
+      return true;
+    }
 
-  //   // Ініціалізуємо поле гри
-  //   for (let i = 0; i < boardSize; i++) {
-  //     shipPlacements.push(new Array(boardSize).fill(0));
-  //   }
+    function placeShip(
+      direction: boolean,
+      length: number,
+      type: ShipType,
+      x: number,
+      y: number,
+    ) {
+      const result = {
+        position: { x, y },
+        direction,
+        length,
+        type,
+      };
+      if (!direction) {
+        for (let i = x; i < x + length; i++) {
+          shipPlacements[y]![i] = length;
+        }
+      } else {
+        for (let i = y; i < y + length; i++) {
+          shipPlacements[i]![x] = length;
+        }
+      }
+      return result;
+    }
 
-  //   // Розміщуємо кораблі
-  //   for (const shipSize of shipSizes) {
-  //     let placed = false;
-  //     while (!placed) {
-  //       const row = Math.floor(Math.random() * boardSize);
-  //       const col = Math.floor(Math.random() * boardSize);
-  //       const direction = Math.random() < 0.5 ? false : true;
+    for (let i = 0; i < boardSize; i++) {
+      shipPlacements.push(new Array(boardSize).fill(0));
+    }
 
-  //       if (canPlaceShip(shipSize, row, col, direction)) {
-  //         placeShip(shipSize, row, col, direction);
-  //         placed = true;
-  //       }
-  //     }
-  //   }
+    for (const { type, length } of shipSizes) {
+      let placed = false;
+      while (!placed) {
+        const x = Math.floor(Math.random() * boardSize);
+        const y = Math.floor(Math.random() * boardSize);
+        const direction = Math.random() < 0.5 ? false : true;
+        console.log(
+          'random x =',
+          x,
+          'random y =',
+          y,
+          'direction',
+          direction,
+          'length',
+          length,
+        );
+        console.log(
+          'canPlaceShip(length, x, y, direction)',
+          canPlaceShip(length, x, y, direction),
+        );
+        if (canPlaceShip(length, x, y, direction)) {
+          ships.push(placeShip(direction, length, type, x, y));
+          placed = true;
+        }
+      }
+    }
+    console.log('+++++shipPlacements', shipPlacements);
+    console.log('botId', botId);
+    this.playersShipsDb.set(botId, ships);
+    console.log(' this.playersShipsDb', this.playersShipsDb);
+    console.log('this.playersShipsDb', this.playersShipsDb.get(botId));
+  }
+  public getBotAttack(dataInfo: RandomAttackRequest): AttackResponse[] {
+    const enemy = dataInfo.indexPlayer;
+    const bot = 1;
+    const position = this.getRandomShot(dataInfo);
+    const response = this.getAttackResponse(enemy, position.x, position.y, bot);
+    if (response.length === 1 && response[0]?.status === 'miss') {
+      this.setTurn(bot, false);
+    }
 
-  //   return shipPlacements;
-  // }
+    const currentPlayersShots = this.playerShotDb.get(bot);
+    if (currentPlayersShots) {
+      currentPlayersShots.push({ x: position.x, y: position.y });
+    }
+    this.playerShotDb.set(
+      bot,
+      currentPlayersShots || [{ x: position.x, y: position.y }],
+    );
+
+    return response;
+  }
 
   public addShips(dataInfo: AddShipsRequest) {
     this.playersShipsDb.set(dataInfo.indexPlayer, dataInfo.ships);
@@ -383,12 +528,12 @@ class Game {
             position.y,
           );
           this.pushSurroundCellsToShotDb(currentPlayer, allSurroundCells);
-          const wrapShipCells = this.atackResponseWrapper(
+          const wrapShipCells = this.attackResponseWrapper(
             allShipPosition,
             currentPlayer,
             'killed',
           );
-          const wrapSurroundCells = this.atackResponseWrapper(
+          const wrapSurroundCells = this.attackResponseWrapper(
             allSurroundCells,
             currentPlayer,
             'miss',
@@ -431,7 +576,7 @@ class Game {
    * @param currentPlayer
    *
    */
-  private atackResponseWrapper(
+  private attackResponseWrapper(
     shipsPositon: Position[],
     currentPlayer: PlayerId,
     status: StatusType,
@@ -646,6 +791,9 @@ class Game {
   public isGameOver(enemy: PlayerId): boolean {
     const shipsInfo = this.playersShipsDb.get(enemy) as Ship[];
     return shipsInfo.every((ship) => ship.length === 0);
+  }
+  public isGameExist(gameId: number): boolean {
+    return this.gamesDb.has(gameId);
   }
 
   public deleteFinishGame(idGame: GameId) {
