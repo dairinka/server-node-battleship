@@ -12,7 +12,6 @@ const addShip = (ws: WebSocket, dataInfo: AddShipsRequest) => {
     ws.send(
       responseWrapper(gameDb.startGame(dataInfo.indexPlayer), 'start_game'),
     );
-    console.log('currentUser', dataInfo.indexPlayer);
     gameDb.setTurn(dataInfo.indexPlayer, true);
     const turn = gameDb.turn(dataInfo.gameId);
     ws.send(responseWrapper(turn, 'turn'));

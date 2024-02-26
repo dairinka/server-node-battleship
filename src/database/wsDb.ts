@@ -8,7 +8,6 @@ class WsDb {
   }
 
   public addUserInfoByWs(ws: WebSocket, userInfo: UserInfo): void {
-    if (!this.wsDb.has(ws)) console.log('userInfo in wsDb add user', userInfo);
     this.wsDb.set(ws, userInfo);
   }
 

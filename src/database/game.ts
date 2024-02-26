@@ -145,9 +145,9 @@ class Game {
     const playerId = this.assignPlayerId(userId);
     const botId = this.getNextBotNumber();
     const gameId = this.getNextGameId();
-    console.log('playerId', playerId);
+
     this.gamesDb.set(gameId, { player1: playerId, player2: botId, bot: true });
-    console.log('create game, see game db', this.gamesDb);
+
     this.addBotShips(botId);
     return {
       idGame: gameId,
@@ -290,31 +290,15 @@ class Game {
         const x = Math.floor(Math.random() * boardSize);
         const y = Math.floor(Math.random() * boardSize);
         const direction = Math.random() < 0.5 ? false : true;
-        console.log(
-          'random x =',
-          x,
-          'random y =',
-          y,
-          'direction',
-          direction,
-          'length',
-          length,
-        );
-        console.log(
-          'canPlaceShip(length, x, y, direction)',
-          canPlaceShip(length, x, y, direction),
-        );
+
         if (canPlaceShip(length, x, y, direction)) {
           ships.push(placeShip(direction, length, type, x, y));
           placed = true;
         }
       }
     }
-    console.log('+++++shipPlacements', shipPlacements);
-    console.log('botId', botId);
+
     this.playersShipsDb.set(botId, ships);
-    console.log(' this.playersShipsDb', this.playersShipsDb);
-    console.log('this.playersShipsDb', this.playersShipsDb.get(botId));
   }
   public getBotAttack(dataInfo: RandomAttackRequest): AttackResponse[] {
     const enemy = dataInfo.indexPlayer;
